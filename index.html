@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MindEase — Wellness Companion for Exam Aspirants</title>
+  <meta name="description" content="MindEase is a private, AI-assisted wellness journal for Indian exam aspirants. Track your mood, identify stress triggers, and receive personalised coping strategies — all in your browser." />
+  <meta name="theme-color" content="#0d1b2a" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="MindEase — Wellness Companion" />
+  <meta property="og:description" content="A private mental wellness journal built for exam aspirants. Track moods, detect stress patterns, and get coping support." />
+  <meta property="og:type" content="website" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Pro:ital,wght@0,400;1,400&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Skip to content (accessibility) -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- ─── Header ──────────────────────────────────────────────────────────── -->
+  <header class="site-header" role="banner">
+    <div class="header-inner container">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">🌿</span>
+        <span class="brand-name">MindEase</span>
+        <span class="brand-tagline">Your quiet space</span>
+      </div>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="#journal-section" class="nav-link">Journal</a>
+        <a href="#history-section" class="nav-link">History</a>
+        <a href="#helplines-section" class="nav-link">Helplines</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ─── Main ─────────────────────────────────────────────────────────────── -->
+  <main id="main-content" class="site-main container" tabindex="-1">
+
+    <!-- Hero / Welcome -->
+    <section class="hero-section" aria-labelledby="hero-heading">
+      <h1 id="hero-heading" class="hero-title">
+        How are you doing today?
+      </h1>
+      <p class="hero-subtitle">
+        This is your private space. Write freely — nothing leaves your device unless you add an AI key.
+      </p>
+    </section>
+
+    <!-- ─── Journal Entry ──────────────────────────────────────────────────── -->
+    <section id="journal-section" class="card journal-section" aria-labelledby="journal-heading">
+      <h2 id="journal-heading" class="section-title">
+        <span aria-hidden="true">📝</span> Today's Journal
+      </h2>
+
+      <!-- Journal textarea -->
+      <div class="field-group">
+        <label for="journal-textarea" class="field-label">
+          What's on your mind? <span class="field-hint">(Ctrl+Enter to submit)</span>
+        </label>
+        <textarea
+          id="journal-textarea"
+          name="journal"
+          class="journal-textarea"
+          rows="6"
+          placeholder="Write anything — your thoughts, feelings, what happened today, what's worrying you…"
+          aria-required="true"
+          aria-describedby="journal-hint"
+          maxlength="5000"
+        ></textarea>
+        <p id="journal-hint" class="field-hint-text">
+          Your entry is analysed locally. If you add an AI key, anonymised patterns are sent to Gemini.
+        </p>
+      </div>
+
+      <!-- Mood slider -->
+      <div class="field-group mood-group">
+        <label for="mood-slider" class="field-label">
+          How is your mood right now?
+        </label>
+        <div class="slider-wrap">
+          <span class="slider-endpoint" aria-hidden="true">😞</span>
+          <input
+            type="range"
+            id="mood-slider"
+            name="mood"
+            class="mood-slider"
+            min="1"
+            max="5"
+            value="3"
+            step="1"
+            aria-label="Mood rating from 1 (very low) to 5 (great)"
+            aria-valuemin="1"
+            aria-valuemax="5"
+            aria-valuenow="3"
+          />
+          <span class="slider-endpoint" aria-hidden="true">😊</span>
+        </div>
+        <div id="mood-label" class="mood-value-label" aria-live="polite" aria-atomic="true">
+          3 — Neutral
+        </div>
+      </div>
+
+      <!-- Optional: Gemini API Key -->
+      <details class="api-key-details" id="api-key-details">
+        <summary class="api-key-summary">
+          <span aria-hidden="true">✨</span>
+          Optional: Add Gemini AI key for personalised insights
+        </summary>
+        <div class="api-key-body">
+          <p class="api-key-note">
+            Your key is used only for this session and is never stored or logged.
+            Get a free key at
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="external-link">Google AI Studio ↗</a>.
+          </p>
+          <label for="api-key-input" class="field-label">Gemini API Key</label>
+          <input
+            type="password"
+            id="api-key-input"
+            name="api-key"
+            class="api-key-input"
+            placeholder="AIza…"
+            autocomplete="off"
+            spellcheck="false"
+            aria-describedby="api-key-hint"
+          />
+          <p id="api-key-hint" class="field-hint-text">
+            Leave blank to use the rule-based engine only (no network requests).
+          </p>
+        </div>
+      </details>
+
+      <!-- Submit -->
+      <button
+        type="button"
+        id="submit-btn"
+        class="btn btn-primary"
+        aria-label="Save journal entry and analyse"
+      >
+        Save Entry
+      </button>
+    </section>
+
+    <!-- ─── Results Section (revealed on submit) ──────────────────────────── -->
+    <section id="results-section" class="results-section hidden" aria-label="Analysis results">
+
+      <!-- Crisis Panel (shown only when crisis is detected) -->
+      <div id="crisis-section" class="hidden" aria-live="assertive">
+        <div id="crisis-container"></div>
+      </div>
+
+      <!-- Regular Insights (hidden during crisis) -->
+      <div id="insights-section" class="hidden">
+
+        <!-- AI Response (aria-live so screen readers announce updates) -->
+        <div
+          id="ai-live-region"
+          class="ai-live-region"
+          aria-live="polite"
+          aria-atomic="false"
+          aria-label="AI-generated insight"
+        ></div>
+
+        <!-- Mood Trend -->
+        <section class="insight-card" aria-labelledby="trend-heading">
+          <h2 id="trend-heading" class="section-title">
+            <span aria-hidden="true">📈</span> Mood Trend
+          </h2>
+          <div id="trend-container"></div>
+        </section>
+
+        <!-- Trigger Breakdown -->
+        <section class="insight-card" aria-labelledby="triggers-heading">
+          <h2 id="triggers-heading" class="section-title">
+            <span aria-hidden="true">🔍</span> Stress Signals
+          </h2>
+          <div id="trigger-container"></div>
+        </section>
+
+        <!-- Coping Suggestions -->
+        <section class="insight-card" aria-labelledby="coping-heading">
+          <h2 id="coping-heading" class="section-title">
+            <span aria-hidden="true">💡</span> Coping Strategies
+          </h2>
+          <div id="coping-container"></div>
+        </section>
+
+        <!-- Weekly Summary -->
+        <section class="insight-card" aria-labelledby="summary-heading">
+          <h2 id="summary-heading" class="section-title">
+            <span aria-hidden="true">📅</span> Weekly Summary
+          </h2>
+          <div id="summary-container"></div>
+        </section>
+
+      </div>
+    </section>
+
+    <!-- ─── Entry History ──────────────────────────────────────────────────── -->
+    <section id="history-section" class="card history-section" aria-labelledby="history-heading">
+      <h2 id="history-heading" class="section-title">
+        <span aria-hidden="true">🗂</span> Recent Entries
+      </h2>
+      <div id="history-container" aria-live="polite">
+        <p class="no-history">Your journal entries will appear here.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ─── Footer ───────────────────────────────────────────────────────────── -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+
+      <!-- Always-visible helplines -->
+      <section id="helplines-section" class="helplines-section" aria-labelledby="helplines-heading">
+        <h2 id="helplines-heading" class="helplines-title">
+          <span aria-hidden="true">📞</span> Mental Health Helplines
+        </h2>
+        <p class="helplines-subtitle">Free, confidential support — always available.</p>
+        <div id="helplines-container"></div>
+      </section>
+
+      <div class="footer-bottom">
+        <p class="footer-note">
+          MindEase stores all data locally in your browser. No personal data is sent to any server unless you optionally enable the AI key.
+        </p>
+        <p class="footer-credit">Built with care for the exam aspirant community.</p>
+      </div>
+
+    </div>
+  </footer>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
