@@ -281,9 +281,11 @@ export function generateWeeklySummary(entries, now = Date.now()) {
     insufficient_data: 'Not enough data yet for a trend.',
   };
 
+  // Humanise category keys for the narrative (e.g. 'sleep_disruption' → 'sleep disruption').
+  const humanise = (key) => String(key).replace(/_/g, ' ');
   const triggerPhrase =
     topTriggers.length > 0
-      ? `Your main stress sources appear to be: ${topTriggers.join(', ')}.`
+      ? `Your main stress sources appear to be: ${topTriggers.map(humanise).join(', ')}.`
       : 'No specific stress patterns were detected.';
 
   const narrative = `This week you logged ${weekEntries.length} ${weekEntries.length === 1 ? 'entry' : 'entries'} with an average mood of ${averageMood}/5 (${moodLabel}). ${trendPhrases[trend]} ${triggerPhrase}`;
