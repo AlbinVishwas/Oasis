@@ -1100,6 +1100,166 @@ body {
   line-height: 1.5;
 }
 
+/* ─── Ghost Button (secondary action: demo) ─────────────────── */
+.btn-ghost {
+  background: transparent;
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+  width: 100%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--primary-soft);
+  }
+}
+
+.btn-ghost:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+/* ─── AI Consent Row ────────────────────────────────────────── */
+.consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+  cursor: pointer;
+}
+
+.consent-checkbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.consent-text {
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+  line-height: 1.5;
+}
+
+/* ─── GenAI Reflection (headline) ───────────────────────────── */
+.ai-reflection {
+  background: var(--secondary-container);
+  border-color: rgba(77, 96, 119, 0.22);
+}
+
+.ai-reflection .ai-label { color: var(--secondary); }
+.ai-reflection .ai-text  { color: var(--on-secondary-container); }
+
+.ai-deeper {
+  font-size: 0.9375rem;
+  color: var(--on-secondary-container);
+  line-height: 1.6;
+  margin-top: var(--space-sm);
+}
+
+.ai-patterns {
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid rgba(77, 96, 119, 0.18);
+}
+
+.ai-patterns-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--secondary);
+  margin-bottom: var(--space-sm);
+}
+
+.ai-pattern-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.ai-pattern {
+  font-size: 0.9375rem;
+  color: var(--on-surface);
+  line-height: 1.5;
+  padding-left: var(--space-md);
+  position: relative;
+}
+
+.ai-pattern::before {
+  content: '◆';
+  position: absolute;
+  left: 0;
+  font-size: 0.625rem;
+  top: 0.3em;
+  color: var(--secondary);
+}
+
+/* ─── Adaptive Mindfulness ──────────────────────────────────── */
+.mindful-card {
+  background: var(--primary-container);
+  border: 1px solid rgba(84, 98, 81, 0.18);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.mindful-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.mindful-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--on-primary-container);
+}
+
+.mindful-time {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--surface-container-lowest);
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.mindful-steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.mindful-step {
+  font-size: 0.9375rem;
+  color: var(--on-primary-container);
+  line-height: 1.55;
+}
+
+/* ─── Motivational Encouragement ────────────────────────────── */
+.encouragement {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  background: var(--surface-container-low);
+  border: 1px solid var(--border-hairline);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--on-surface-variant);
+}
+
+.encouragement-icon { flex-shrink: 0; font-size: 1.1rem; }
+
 /* ─── Utility ───────────────────────────────────────────────── */
 .hidden { display: none !important; }
 

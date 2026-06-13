@@ -49,7 +49,9 @@
         How are you doing today?
       </h1>
       <p class="hero-subtitle">
-        This is your private space. Write freely — nothing leaves your device unless you add an AI key.
+        Write freely about your prep. Oasis uses Generative AI to read between the lines —
+        surfacing the hidden stress patterns a normal mood tracker misses — and responds with
+        adaptive mindfulness and encouragement, like a calm study companion that is always around.
       </p>
     </section>
 
@@ -75,7 +77,8 @@
           maxlength="5000"
         ></textarea>
         <p id="journal-hint" class="field-hint-text">
-          Your entry is analysed locally. If you add an AI key, anonymised patterns are sent to Gemini.
+          Your entry is analysed on your device. Add a Gemini key for a deeper AI reflection —
+          it reads your full entry only if you opt in; otherwise just anonymised patterns are sent.
         </p>
       </div>
 
@@ -131,8 +134,16 @@
             aria-describedby="api-key-hint"
           />
           <p id="api-key-hint" class="field-hint-text">
-            Leave blank to use the rule-based engine only (no network requests).
+            Leave blank to use the on-device engine only (no network requests).
           </p>
+
+          <label class="consent-row" for="ai-consent">
+            <input type="checkbox" id="ai-consent" class="consent-checkbox" checked />
+            <span class="consent-text">
+              Let AI read this entry for a deeper reflection. Unchecked, only your mood and
+              anonymised stress categories are sent — never the words you wrote.
+            </span>
+          </label>
         </div>
       </details>
 
@@ -144,6 +155,16 @@
         aria-label="Save journal entry and analyse"
       >
         Save Entry
+      </button>
+
+      <!-- Demo: load a sample week so the full experience is visible instantly -->
+      <button
+        type="button"
+        id="demo-btn"
+        class="btn btn-ghost"
+        aria-label="Load a sample week of entries to explore the app"
+      >
+        ✨ Load a sample week
       </button>
     </section>
 
@@ -158,14 +179,17 @@
       <!-- Regular Insights (hidden during crisis) -->
       <div id="insights-section" class="hidden">
 
-        <!-- AI Response (aria-live so screen readers announce updates) -->
+        <!-- AI Reflection (headline; aria-live so screen readers announce updates) -->
         <div
           id="ai-live-region"
           class="ai-live-region"
           aria-live="polite"
           aria-atomic="false"
-          aria-label="AI-generated insight"
+          aria-label="AI-generated reflection"
         ></div>
+
+        <!-- Motivational encouragement -->
+        <div id="encouragement-container" aria-live="polite"></div>
 
         <!-- Mood Trend -->
         <section class="insight-card" aria-labelledby="trend-heading">
@@ -189,6 +213,14 @@
             <span aria-hidden="true">💡</span> Coping Strategies
           </h2>
           <div id="coping-container"></div>
+        </section>
+
+        <!-- Adaptive Mindfulness -->
+        <section class="insight-card" aria-labelledby="mindfulness-heading">
+          <h2 id="mindfulness-heading" class="section-title">
+            <span aria-hidden="true">🧘</span> Adaptive Mindfulness
+          </h2>
+          <div id="mindfulness-container"></div>
         </section>
 
         <!-- Weekly Summary -->

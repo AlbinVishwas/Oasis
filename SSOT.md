@@ -149,6 +149,12 @@ This module is the single source of all domain content. All exports are named co
   Multi-word by design to minimise false positives (e.g. never match the bare word "sleep").
 - **`HELPLINES`** — array of `{ name, number, description }`. MUST include **Tele-MANAS (14416)**,
   **iCall (9152987821)**, and emergency **112**. This is the *only* place helplines are defined.
+- **`MINDFULNESS_EXERCISES`** — array of `{ id, name, durationMin, bestFor: string[], steps: string[] }`.
+  `bestFor` references trigger category keys (or `'any'`) and drives adaptive selection (R5).
+- **`ENCOURAGEMENTS`** — object keyed by trend (`rising|declining|stable|insufficient_data`); each value
+  is an array of motivational, non-toxic lines (R6).
+- **`SAMPLE_ENTRIES`** — array of `{ daysAgo, mood, text }` powering the "Load sample week" demo;
+  timestamps are resolved and triggers derived by the engine at load time (never hardcoded).
 
 **Invariants (MUST):** keys of `TRIGGER_KEYWORDS` and `COPING_STRATEGIES` are identical sets; all
 keyword text is lowercase; no duplicate category keys.
@@ -166,6 +172,8 @@ All functions are **pure** and exported. Signatures are normative; tests assert 
 | `extractTriggers` | `(text: string) => string[]` | Returns the subset of the six category keys whose keywords appear in `text`. Deterministic order = `TRIGGER_KEYWORDS` key order. No duplicates. |
 | `computeMoodTrend` | `(entries: Entry[]) => 'rising' \| 'declining' \| 'stable' \| 'insufficient_data'` | Compares mean mood of most-recent half vs earlier half. `< 4` entries → `insufficient_data`. Pure; no `Date.now`. |
 | `suggestCoping` | `(triggers: string[], trend: string) => Array<{category: string, strategies: string[]}>` | Returns one grouped entry per matched trigger (category + its strategies) so the UI can render labelled coping cards. When `trend === 'declining'`, escalate to 2 strategies/trigger; otherwise 1. Falls back to the first two categories when no triggers. Stable order. |
+| `suggestMindfulness` | `(mood: number, triggers: string[]) => Exercise` | Adaptively selects one `MINDFULNESS_EXERCISES` entry: trigger-matched first (in key order), then calming box-breathing for a low mood, then a general body scan. Deterministic; tolerates null triggers (R5). |
+| `pickEncouragement` | `(trend: string) => string` | Returns the first `ENCOURAGEMENTS[trend]` line; falls back to `insufficient_data`. Deterministic (R6). |
 | `generateWeeklySummary` | `(entries: Entry[], now?: number) => Summary` | Aggregates entries within `now − 7 days`. `now` defaults to `Date.now()` but is **injectable** to keep the function pure/testable. Returns `{ totalEntries, averageMood, moodLabel, topTriggers, trend, narrative }`. |
 
 **Type — `Entry` (canonical):**
@@ -181,12 +189,17 @@ All functions are **pure** and exported. Signatures are normative; tests assert 
 
 ## 8. AI Layer Contract — `src/aiLayer.js`
 
-Optional enhancement layer (R2). The app MUST be fully functional when this layer is absent or fails.
+**Primary analysis path (R2, AI-native).** GenAI is the headline capability; the engine is the offline
+safety net. The app MUST remain fully functional when this layer is absent or fails.
 
 | Function | Signature | Contract |
 |---|---|---|
-| `analyzePatterns` | `(entries: Entry[], apiKey: string) => Promise<string \| null>` | Builds an **anonymised** summary internally from the last 10 entries (mood values, dates, trigger categories) — **never reads or sends `entry.text`**. Returns insight text or `null` on any error. |
-| `generateEmpathyResponse` | `(mood: number, triggers: string[], apiKey: string) => Promise<string \| null>` | Returns a short empathetic, motivational message (R6) built **only** from the mood rating and anonymised trigger categories — **never the raw journal text**. Returns `null` on error. |
+| `analyzeJournal` | `(text: string, mood: number, apiKey: string) => Promise<{reflection, hiddenPatterns[], deeperInsight} \| null>` | **Headline.** Reads the **raw entry** (only with explicit user consent) and returns structured insight: a conversational reflection, **hidden patterns** a keyword tracker misses, and one gentle next step. Asks Gemini for JSON; parses defensively (malformed → prose reflection; total failure → `null`). |
+| `analyzePatterns` | `(entries: Entry[], apiKey: string) => Promise<string \| null>` | Anonymised longitudinal insight from the last 10 entries (mood, dates, trigger categories) — **never reads `entry.text`**. `null` on error. |
+| `generateEmpathyResponse` | `(mood: number, triggers: string[], apiKey: string) => Promise<string \| null>` | Anonymised per-entry empathy (mood + trigger categories only) used when consent is withheld. `null` on error. |
+
+**Consent model (MUST):** `analyzeJournal` (raw-text read) runs only when the consent checkbox is ticked.
+Without consent, the app uses the anonymised functions. Crisis entries call **no** AI function at all.
 
 **Rules (MUST):**
 - Model: **Gemini 1.5 Flash**. Key is **user-provided at runtime**; never embedded, never persisted, never logged.

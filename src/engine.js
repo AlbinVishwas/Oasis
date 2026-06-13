@@ -1,7 +1,8 @@
 /**
- * @fileoverview Pure engine functions for MindEase wellness companion.
- * No DOM manipulation, no network calls, no side effects.
- * All functions are deterministic and testable in isolation.
+ * @fileoverview Pure analysis engine for Oasis. Every export is a deterministic,
+ * side-effect-free function (no DOM, network, storage, or wall-clock reads beyond
+ * an injected `now`), which makes the whole engine unit-testable in isolation and
+ * lets the app deliver real value offline — with the Gemini layer as enhancement.
  */
 
 import {
@@ -9,6 +10,8 @@ import {
   COPING_STRATEGIES,
   CRISIS_KEYWORDS,
   MOOD_SCALE,
+  MINDFULNESS_EXERCISES,
+  ENCOURAGEMENTS,
 } from '../data/wellness.js';
 
 /**
@@ -148,6 +151,56 @@ export function suggestCoping(triggers, moodTrend) {
       category: trigger,
       strategies: COPING_STRATEGIES[trigger].slice(0, strategiesPerTrigger),
     }));
+}
+
+/**
+ * Selects a single adaptive mindfulness exercise that fits the student's current
+ * state. Triggers take priority (a specific stressor gets a matching practice);
+ * a low mood with no specific trigger falls back to calming box breathing; and
+ * anything else gets a gentle general body scan. Deterministic for a given input.
+ *
+ * @param {number} mood - Current mood rating (1-5).
+ * @param {string[]} triggers - Trigger categories from extractTriggers().
+ * @returns {{id: string, name: string, durationMin: number, steps: string[]}} The chosen exercise.
+ *
+ * @example
+ * suggestMindfulness(2, ['sleep_disruption']).id; // '4-7-8-breath'
+ */
+export function suggestMindfulness(mood, triggers) {
+  const list = Array.isArray(triggers) ? triggers : [];
+
+  // 1. Prefer an exercise whose `bestFor` matches a detected trigger,
+  //    in TRIGGER_KEYWORDS order so the result is stable and predictable.
+  for (const category of Object.keys(TRIGGER_KEYWORDS)) {
+    if (!list.includes(category)) continue;
+    const match = MINDFULNESS_EXERCISES.find((ex) => ex.bestFor.includes(category));
+    if (match) return match;
+  }
+
+  // 2. No specific trigger: a low mood gets the most calming breath work.
+  if (Number(mood) <= 2) {
+    const calming = MINDFULNESS_EXERCISES.find((ex) => ex.id === 'box-breathing');
+    if (calming) return calming;
+  }
+
+  // 3. Otherwise, a gentle general-purpose practice.
+  return (
+    MINDFULNESS_EXERCISES.find((ex) => ex.bestFor.includes('any')) ||
+    MINDFULNESS_EXERCISES[0]
+  );
+}
+
+/**
+ * Picks a context-aware motivational encouragement for the given mood trend.
+ * Returns the first line for each trend so the result is deterministic and
+ * testable. Falls back to the `insufficient_data` set for unknown trends.
+ *
+ * @param {'rising'|'declining'|'stable'|'insufficient_data'} trend - Mood trend.
+ * @returns {string} A single encouraging sentence.
+ */
+export function pickEncouragement(trend) {
+  const lines = ENCOURAGEMENTS[trend] || ENCOURAGEMENTS.insufficient_data;
+  return lines[0];
 }
 
 /**

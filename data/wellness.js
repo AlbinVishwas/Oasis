@@ -1,7 +1,9 @@
 /**
- * @fileoverview Wellness data constants for the MindEase companion app.
- * Provides mood scale, trigger keywords, coping strategies, crisis detection
- * data, and emergency helpline information.
+ * @fileoverview Wellness domain data for Oasis — the single source of truth for
+ * all content the app reasons over: the mood scale, stress-trigger keywords,
+ * coping strategies, adaptive mindfulness exercises, motivational encouragements,
+ * crisis-detection phrases, emergency helplines, and a sample week used by the
+ * built-in demo. Pure data only — no logic, no side effects.
  */
 
 /**
@@ -97,6 +99,117 @@ export const COPING_STRATEGIES = {
     'Accept that some backlog is normal; high-performing exam aspirants often drop lower-priority topics strategically. Prioritise ruthlessly.',
   ],
 };
+
+/**
+ * Adaptive mindfulness exercises. The engine selects one based on the user's
+ * current mood and detected triggers (see `suggestMindfulness`), so the practice
+ * offered actually fits what the student is going through right now.
+ * @type {Array.<{id: string, name: string, durationMin: number, bestFor: string[], steps: string[]}>}
+ */
+export const MINDFULNESS_EXERCISES = [
+  {
+    id: 'box-breathing',
+    name: 'Box Breathing',
+    durationMin: 2,
+    bestFor: ['syllabus_overload', 'mock_performance'],
+    steps: [
+      'Breathe in slowly through your nose for 4 counts.',
+      'Hold your breath gently for 4 counts.',
+      'Exhale through your mouth for 4 counts.',
+      'Hold empty for 4 counts, then repeat the square four times.',
+    ],
+  },
+  {
+    id: '4-7-8-breath',
+    name: '4-7-8 Calming Breath',
+    durationMin: 2,
+    bestFor: ['sleep_disruption'],
+    steps: [
+      'Empty your lungs completely.',
+      'Breathe in quietly through your nose for 4 counts.',
+      'Hold the breath for 7 counts.',
+      'Exhale fully through your mouth for 8 counts. Repeat three to four times.',
+    ],
+  },
+  {
+    id: 'five-senses-grounding',
+    name: '5-4-3-2-1 Grounding',
+    durationMin: 3,
+    bestFor: ['backlog_anxiety'],
+    steps: [
+      'Name 5 things you can see around you.',
+      'Notice 4 things you can physically feel.',
+      'Listen for 3 distinct sounds.',
+      'Identify 2 things you can smell.',
+      'Acknowledge 1 thing you can taste.',
+    ],
+  },
+  {
+    id: 'self-compassion-pause',
+    name: 'Self-Compassion Pause',
+    durationMin: 3,
+    bestFor: ['peer_comparison', 'family_pressure'],
+    steps: [
+      'Place a hand on your chest and feel its warmth.',
+      'Silently acknowledge: "This is a moment of stress."',
+      'Remind yourself: "Stress is part of preparing for something that matters."',
+      'Offer yourself the one kind sentence you would tell a friend in your place.',
+    ],
+  },
+  {
+    id: 'body-scan',
+    name: 'Two-Minute Body Scan',
+    durationMin: 2,
+    bestFor: ['any'],
+    steps: [
+      'Sit comfortably and lower or close your eyes.',
+      'Move your attention slowly from your toes up to your head.',
+      'Notice any tension and let each area soften as you breathe out.',
+      'Finish with three slow, full breaths.',
+    ],
+  },
+];
+
+/**
+ * Motivational encouragements keyed by mood trend. Used by `pickEncouragement`
+ * to offer context-aware, non-toxic positivity ("a dip is data, not a verdict").
+ * @type {Object.<string, string[]>}
+ */
+export const ENCOURAGEMENTS = {
+  rising: [
+    'Your effort is compounding — the upward trend in your mood is evidence you are doing something right. Protect the habits that got you here.',
+    'Momentum is on your side this week. Small, repeatable wins are exactly how long preparations are won.',
+  ],
+  declining: [
+    'A dip is data, not a verdict. Even students who clear these exams have heavy weeks — what matters is that you showed up to reflect.',
+    'Be as patient with yourself as you would be with a friend preparing for the same exam. This week does not define your result.',
+  ],
+  stable: [
+    'Consistency under real pressure is an underrated superpower. Steady is exactly the pace that sustains a long preparation.',
+    'You are holding your ground while carrying a lot. That is resilience, even on the days it does not feel like it.',
+  ],
+  insufficient_data: [
+    'Every honest check-in sharpens the insights you will get next. You have started — and that is the hardest part.',
+    'One reflection is already an act of self-care. Keep going at your own pace; the picture gets clearer with each entry.',
+  ],
+};
+
+/**
+ * A realistic sample week of an exam aspirant's entries, used by the built-in
+ * "Load sample week" demo so the full experience (trends, triggers, coping,
+ * summary) is visible instantly — even without an API key. `daysAgo` is resolved
+ * to a timestamp at load time; triggers are derived by the engine, not hardcoded.
+ * @type {Array.<{daysAgo: number, mood: number, text: string}>}
+ */
+export const SAMPLE_ENTRIES = [
+  { daysAgo: 6, mood: 3, text: 'Started the week okay. Made a rough timetable for the pending syllabus but there is so much to study that it already feels overwhelming.' },
+  { daysAgo: 5, mood: 2, text: 'Bad mock score today, way below my usual rank. I keep thinking everyone else in my batch is doing better than me.' },
+  { daysAgo: 4, mood: 2, text: 'Could not sleep again, kept staring at the ceiling till 3 am replaying the test. Woke up exhausted and behind on revision.' },
+  { daysAgo: 3, mood: 3, text: 'Parents asked about my preparation at dinner and I felt that familiar pressure. Tried to just focus on finishing two chapters.' },
+  { daysAgo: 2, mood: 4, text: 'Better day. Cleared a big backlog topic I had been avoiding and it felt good to actually understand it.' },
+  { daysAgo: 1, mood: 4, text: 'Did a full-length test series paper and stayed calm even on the hard section. Compared less to others today.' },
+  { daysAgo: 0, mood: 4, text: 'Feeling a bit more in control. Still tired but the sleep schedule is slowly improving and the syllabus feels less infinite.' },
+];
 
 /**
  * Crisis detection keywords — phrases that may indicate serious distress.

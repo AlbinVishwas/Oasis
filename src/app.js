@@ -1,8 +1,10 @@
 /**
- * @fileoverview DOM controller for MindEase wellness companion.
- * Handles all user interaction, data persistence, and UI rendering.
- * All user input is HTML-escaped before rendering.
- * Crisis detection always runs first and gates AI calls.
+ * @fileoverview DOM controller for the Oasis wellness companion.
+ *
+ * Orchestrates the per-entry pipeline: sanitize → crisis check (always first) →
+ * deterministic engine analysis (works fully offline) → optional Generative-AI
+ * enhancement → render → persist. Every piece of user- or model-generated text is
+ * HTML-escaped before it touches the DOM, and crisis detection gates all AI calls.
  */
 
 import {
@@ -11,15 +13,18 @@ import {
   computeMoodTrend,
   detectCrisis,
   suggestCoping,
+  suggestMindfulness,
+  pickEncouragement,
   generateWeeklySummary,
 } from './engine.js';
-import { analyzePatterns, generateEmpathyResponse } from './aiLayer.js';
-import { HELPLINES, MOOD_SCALE } from '../data/wellness.js';
+import { analyzeJournal, analyzePatterns, generateEmpathyResponse } from './aiLayer.js';
+import { HELPLINES, MOOD_SCALE, SAMPLE_ENTRIES } from '../data/wellness.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'mindease_entries';
+const STORAGE_KEY = 'mindease_entries'; // kept stable so existing users keep their history
 const MAX_ENTRIES = 100;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 // ─── Utility: HTML Escaping ────────────────────────────────────────────────────
 
@@ -247,6 +252,89 @@ function renderCoping(container, suggestions, isEscalated) {
   container.innerHTML = `${escalationNotice}<div class="coping-grid">${cards}</div>`;
 }
 
+// ─── Render: Adaptive Mindfulness ─────────────────────────────────────────────
+
+/**
+ * Renders the adaptive mindfulness exercise chosen for this entry.
+ * @param {HTMLElement} container
+ * @param {{name: string, durationMin: number, steps: string[]}} exercise
+ */
+function renderMindfulness(container, exercise) {
+  if (!exercise) {
+    container.innerHTML = '';
+    return;
+  }
+  const steps = exercise.steps
+    .map((s) => `<li class="mindful-step">${escapeHtml(s)}</li>`)
+    .join('');
+
+  container.innerHTML = `
+    <div class="mindful-card">
+      <div class="mindful-head">
+        <span class="mindful-name">${escapeHtml(exercise.name)}</span>
+        <span class="mindful-time">${escapeHtml(String(exercise.durationMin))} min</span>
+      </div>
+      <ol class="mindful-steps">${steps}</ol>
+    </div>
+  `;
+}
+
+// ─── Render: Motivational Encouragement ───────────────────────────────────────
+
+/**
+ * Renders a single motivational encouragement line.
+ * @param {HTMLElement} container
+ * @param {string} message
+ */
+function renderEncouragement(container, message) {
+  if (!message) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = `
+    <p class="encouragement" role="note">
+      <span class="encouragement-icon" aria-hidden="true">🌱</span>${escapeHtml(message)}
+    </p>
+  `;
+}
+
+// ─── Render: GenAI Reflection (headline) ──────────────────────────────────────
+
+/**
+ * Renders the Generative-AI reflection: a conversational reflection plus the
+ * hidden emotional patterns the model surfaced from the raw entry.
+ * @param {HTMLElement} container
+ * @param {{reflection: string, hiddenPatterns: string[], deeperInsight: string}} ai
+ */
+function renderAIReflection(container, ai) {
+  if (!ai || !ai.reflection) {
+    container.innerHTML = `<p class="ai-unavailable">AI reflection unavailable — your insights above come from the on-device engine.</p>`;
+    return;
+  }
+
+  const patterns = Array.isArray(ai.hiddenPatterns) && ai.hiddenPatterns.length > 0
+    ? `<div class="ai-patterns" aria-label="Hidden patterns surfaced by AI">
+         <p class="ai-patterns-label">Patterns a simple tracker might miss</p>
+         <ul class="ai-pattern-list">${ai.hiddenPatterns
+           .map((p) => `<li class="ai-pattern">${escapeHtml(p)}</li>`)
+           .join('')}</ul>
+       </div>`
+    : '';
+
+  const deeper = ai.deeperInsight
+    ? `<p class="ai-deeper"><strong>A gentle next step:</strong> ${escapeHtml(ai.deeperInsight)}</p>`
+    : '';
+
+  container.innerHTML = `
+    <div class="ai-response ai-reflection">
+      <p class="ai-label">✨ AI Reflection</p>
+      <p class="ai-text">${escapeHtml(ai.reflection)}</p>
+      ${deeper}
+      ${patterns}
+    </div>
+  `;
+}
+
 // ─── Render: Weekly Summary ───────────────────────────────────────────────────
 
 /**
@@ -402,71 +490,128 @@ async function handleSubmit(els, entries) {
 
   hide(els.crisisSection);
 
-  // 3. Engine analysis
-  const triggers   = extractTriggers(text);
-  const trend      = computeMoodTrend(entries);
-  const coping     = suggestCoping(triggers, trend);
-  const summary    = generateWeeklySummary(entries);
+  // 3. Deterministic engine analysis — fully functional with no key or network.
+  const triggers    = extractTriggers(text);
+  const trend       = computeMoodTrend(entries);
+  const coping      = suggestCoping(triggers, trend);
+  const mindfulness = suggestMindfulness(mood, triggers);
+  const encourage   = pickEncouragement(trend);
+  const summary     = generateWeeklySummary(entries);
 
-  // 4. Render synchronous results immediately
-  renderMoodTrend(els.trendContainer, trend, entries);
+  // 4. Render synchronous results immediately.
   renderTriggers(els.triggerContainer, triggers);
+  renderMoodTrend(els.trendContainer, trend, entries);
   renderCoping(els.copingContainer, coping, trend === 'declining');
+  renderMindfulness(els.mindfulnessContainer, mindfulness);
+  renderEncouragement(els.encouragementContainer, encourage);
   renderWeeklySummary(els.summaryContainer, summary);
 
   show(els.insightsSection);
   show(els.resultsSection);
 
-  // 5. Persist entry
+  // 5. Persist entry.
   const entry = { text, mood, timestamp: Date.now(), triggers, crisis: false };
   entries.push(entry);
   saveEntries(entries);
   renderHistory(els.historyContainer, entries);
 
-  // 6. Scroll to results
+  // 6. Scroll to results.
   els.resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  // 7. AI layer (optional, non-blocking, runs after UI is already shown)
-  if (apiKey) {
-    setLive(els.aiLiveRegion, `<p class="ai-loading" aria-live="polite">✨ Getting personalised insight…</p>`);
+  // 7. Generative-AI enhancement (optional, non-blocking, never gates the UI).
+  await runAiEnhancement(els, { text, mood, triggers, apiKey, entries });
 
-    // Privacy: only mood + anonymised trigger categories are sent — never raw text.
-    const [empathy, patterns] = await Promise.all([
-      generateEmpathyResponse(mood, triggers, apiKey),
-      analyzePatterns(entries, apiKey),
-    ]);
-
-    let aiHtml = '';
-    if (empathy) {
-      aiHtml += `
-        <div class="ai-response empathy-response">
-          <p class="ai-label">✨ AI Response</p>
-          <p class="ai-text">${escapeHtml(empathy)}</p>
-        </div>
-      `;
-    }
-    if (patterns) {
-      aiHtml += `
-        <div class="ai-response patterns-response">
-          <p class="ai-label">📊 Pattern Insight</p>
-          <p class="ai-text">${escapeHtml(patterns)}</p>
-        </div>
-      `;
-    }
-
-    setLive(
-      els.aiLiveRegion,
-      aiHtml || `<p class="ai-unavailable">AI insight unavailable — results above are from the rule-based engine.</p>`
-    );
-  } else {
-    setLive(els.aiLiveRegion, '');
-  }
-
-  // Reset form
+  // Reset the entry field for the next check-in.
   els.journalTextarea.value = '';
   updateMoodLabel(els.moodSlider, els.moodLabel);
   els.submitBtn.disabled = false;
   els.submitBtn.textContent = 'Save Entry';
+}
+
+/**
+ * Runs the optional Gemini enhancement after synchronous results are visible.
+ *
+ * Privacy model:
+ *  - With explicit consent, `analyzeJournal` reads the raw entry to surface
+ *    hidden patterns (the core GenAI capability the challenge asks for).
+ *  - Without consent, only the mood + anonymised trigger categories are sent.
+ * Either way the call is best-effort: failures resolve to null and the
+ * already-rendered engine insights stand on their own.
+ *
+ * @param {object} els
+ * @param {{text: string, mood: number, triggers: string[], apiKey: string, entries: Array}} ctx
+ */
+async function runAiEnhancement(els, { text, mood, triggers, apiKey, entries }) {
+  if (!apiKey) {
+    setLive(els.aiLiveRegion, '');
+    return;
+  }
+
+  const consented = !!(els.aiConsent && els.aiConsent.checked);
+  setLive(els.aiLiveRegion, `<p class="ai-loading">✨ Generating a deeper reflection…</p>`);
+
+  if (consented) {
+    const ai = await analyzeJournal(text, mood, apiKey);
+    renderAIReflection(els.aiLiveRegion, ai);
+    return;
+  }
+
+  // No consent to read raw text — fall back to anonymised insight.
+  const [empathy, patterns] = await Promise.all([
+    generateEmpathyResponse(mood, triggers, apiKey),
+    analyzePatterns(entries, apiKey),
+  ]);
+  renderAIReflection(els.aiLiveRegion, {
+    reflection: empathy || '',
+    hiddenPatterns: [],
+    deeperInsight: patterns || '',
+  });
+}
+
+/**
+ * Loads the built-in sample week so the full experience is visible instantly,
+ * even without an API key. Replaces any existing entries (with confirmation when
+ * data is present), derives triggers via the engine, and re-renders everything.
+ *
+ * @param {object} els
+ * @param {Array} entries - Mutable entries array (replaced in place).
+ */
+function loadSampleWeek(els, entries) {
+  if (entries.length > 0 &&
+      !window.confirm('Load the sample week? This replaces your current entries.')) {
+    return;
+  }
+
+  const now = Date.now();
+  const samples = SAMPLE_ENTRIES.map((s) => {
+    const text = sanitizeInput(s.text);
+    return {
+      text,
+      mood: Math.min(5, Math.max(1, Number(s.mood) || 3)),
+      timestamp: now - s.daysAgo * DAY_MS,
+      triggers: extractTriggers(text),
+      crisis: false,
+    };
+  });
+
+  entries.length = 0;
+  entries.push(...samples);
+  saveEntries(entries);
+
+  // Re-render the longitudinal views from the freshly loaded data.
+  const trend = computeMoodTrend(entries);
+  renderHistory(els.historyContainer, entries);
+  renderWeeklySummary(els.summaryContainer, generateWeeklySummary(entries));
+  renderMoodTrend(els.trendContainer, trend, entries);
+  renderTriggers(els.triggerContainer, entries[entries.length - 1].triggers);
+  renderCoping(els.copingContainer, suggestCoping(entries[entries.length - 1].triggers, trend), trend === 'declining');
+  renderMindfulness(els.mindfulnessContainer, suggestMindfulness(entries[entries.length - 1].mood, entries[entries.length - 1].triggers));
+  renderEncouragement(els.encouragementContainer, pickEncouragement(trend));
+  setLive(els.aiLiveRegion, '');
+  show(els.insightsSection);
+  hide(els.crisisSection);
+  show(els.resultsSection);
+  els.resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ─── Init ──────────────────────────────────────────────────────────────────────
@@ -489,10 +634,14 @@ function init() {
     trendContainer:   document.getElementById('trend-container'),
     triggerContainer: document.getElementById('trigger-container'),
     copingContainer:  document.getElementById('coping-container'),
+    mindfulnessContainer: document.getElementById('mindfulness-container'),
+    encouragementContainer: document.getElementById('encouragement-container'),
     summaryContainer: document.getElementById('summary-container'),
     historyContainer: document.getElementById('history-container'),
     helplinesContainer: document.getElementById('helplines-container'),
     aiLiveRegion:     document.getElementById('ai-live-region'),
+    aiConsent:        document.getElementById('ai-consent'),
+    demoBtn:          document.getElementById('demo-btn'),
   };
 
   // Load persisted entries
@@ -529,6 +678,11 @@ function init() {
   // Submit button (no form submission — pure JS click handler)
   if (els.submitBtn) {
     els.submitBtn.addEventListener('click', () => handleSubmit(els, entries));
+  }
+
+  // "Load sample week" demo — lets anyone see the full experience instantly.
+  if (els.demoBtn) {
+    els.demoBtn.addEventListener('click', () => loadSampleWeek(els, entries));
   }
 
   // Allow Ctrl+Enter to submit from textarea

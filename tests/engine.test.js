@@ -15,6 +15,8 @@ import {
   detectCrisis,
   computeMoodTrend,
   suggestCoping,
+  suggestMindfulness,
+  pickEncouragement,
   generateWeeklySummary,
   sanitizeInput,
 } from '../src/engine.js';
@@ -325,6 +327,55 @@ test('generateWeeklySummary handles null gracefully without throwing', () => {
   const result = generateWeeklySummary(null);
   assert.equal(result.totalEntries, 0);
 });
+
+// ─── 7. suggestMindfulness — adaptive selection ──────────────────────────────
+
+test('suggestMindfulness returns a 4-7-8 breath for sleep disruption', () => {
+  const ex = suggestMindfulness(3, ['sleep_disruption']);
+  assert.equal(ex.id, '4-7-8-breath');
+});
+
+test('suggestMindfulness matches self-compassion for peer comparison', () => {
+  const ex = suggestMindfulness(3, ['peer_comparison']);
+  assert.equal(ex.id, 'self-compassion-pause');
+});
+
+test('suggestMindfulness falls back to calming breath for a low mood with no trigger', () => {
+  const ex = suggestMindfulness(1, []);
+  assert.equal(ex.id, 'box-breathing');
+});
+
+test('suggestMindfulness returns a general practice for a neutral, trigger-free entry', () => {
+  const ex = suggestMindfulness(4, []);
+  assert.equal(ex.id, 'body-scan');
+});
+
+test('suggestMindfulness is deterministic and always returns steps', () => {
+  const a = suggestMindfulness(2, ['mock_performance']);
+  const b = suggestMindfulness(2, ['mock_performance']);
+  assert.deepEqual(a, b);
+  assert.ok(Array.isArray(a.steps) && a.steps.length > 0);
+});
+
+test('suggestMindfulness tolerates a null triggers argument', () => {
+  assert.doesNotThrow(() => suggestMindfulness(3, null));
+});
+
+// ─── 8. pickEncouragement — motivational lines ───────────────────────────────
+
+test('pickEncouragement returns a non-empty string per trend', () => {
+  for (const trend of ['rising', 'declining', 'stable', 'insufficient_data']) {
+    const msg = pickEncouragement(trend);
+    assert.ok(typeof msg === 'string' && msg.length > 0, `trend ${trend} should yield a message`);
+  }
+});
+
+test('pickEncouragement falls back gracefully for an unknown trend', () => {
+  const msg = pickEncouragement('not-a-real-trend');
+  assert.ok(typeof msg === 'string' && msg.length > 0);
+});
+
+// ─── 9. generateWeeklySummary (continued) ────────────────────────────────────
 
 test('generateWeeklySummary is pure: window is relative to injected now', () => {
   const now = 1_000_000_000_000; // fixed reference time
