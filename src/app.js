@@ -440,6 +440,22 @@ function updateMoodLabel(slider, label) {
   label.textContent = `${val} — ${moodLabelFor(val)}`;
 }
 
+/**
+ * Scales the slider's emoji anchors toward whichever end the mood is nearer,
+ * giving the control a gentle, tactile feel (per the design system).
+ * @param {HTMLInputElement} slider
+ */
+function updateMoodEmojis(slider) {
+  const low = document.getElementById('mood-emoji-low');
+  const high = document.getElementById('mood-emoji-high');
+  if (!low || !high) return;
+  const t = (parseInt(slider.value, 10) - 1) / 4; // 0 → low end, 1 → high end
+  low.style.transform = `scale(${(1.25 - t * 0.45).toFixed(3)})`;
+  low.style.opacity = (0.9 - t * 0.5).toFixed(2);
+  high.style.transform = `scale(${(0.8 + t * 0.45).toFixed(3)})`;
+  high.style.opacity = (0.4 + t * 0.5).toFixed(2);
+}
+
 // ─── Submit Handler ───────────────────────────────────────────────────────────
 
 /**
@@ -667,12 +683,22 @@ function init() {
     renderMoodTrend(els.trendContainer, computeMoodTrend(entries), entries);
   }
 
-  // Mood slider live label
+  // Today's date in the hero (e.g. "Thursday, 24 October").
+  const todayDate = document.getElementById('today-date');
+  if (todayDate) {
+    todayDate.textContent = new Date().toLocaleDateString('en-IN', {
+      weekday: 'long', day: 'numeric', month: 'long',
+    });
+  }
+
+  // Mood slider live label + scaling emoji anchors.
   if (els.moodSlider && els.moodLabel) {
     updateMoodLabel(els.moodSlider, els.moodLabel);
-    els.moodSlider.addEventListener('input', () =>
-      updateMoodLabel(els.moodSlider, els.moodLabel)
-    );
+    updateMoodEmojis(els.moodSlider);
+    els.moodSlider.addEventListener('input', () => {
+      updateMoodLabel(els.moodSlider, els.moodLabel);
+      updateMoodEmojis(els.moodSlider);
+    });
   }
 
   // Submit button (no form submission — pure JS click handler)

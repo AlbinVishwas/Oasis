@@ -12,14 +12,18 @@
   <meta property="og:description" content="A private mental wellness journal built for exam aspirants. Track moods, detect stress patterns, and get coping support." />
   <meta property="og:type" content="website" />
 
-  <!-- Google Fonts: DM Sans (Warm Minimalism design system) -->
+  <!-- Google Fonts: DM Sans + Material Symbols (Warm Minimalism design system) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+
+  <!-- Organic paper-grain overlay (decorative, non-interactive) -->
+  <div class="grain-overlay" aria-hidden="true"></div>
 
   <!-- Skip to content (accessibility) -->
   <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -28,14 +32,14 @@
   <header class="site-header" role="banner">
     <div class="header-inner container">
       <div class="brand">
-        <span class="brand-icon" aria-hidden="true">🌿</span>
+        <span class="brand-mark material-symbols-outlined" aria-hidden="true">spa</span>
         <span class="brand-name">Oasis</span>
         <span class="brand-tagline">Your quiet space</span>
       </div>
       <nav class="site-nav" aria-label="Main navigation">
         <a href="#journal-section" class="nav-link">Journal</a>
-        <a href="#history-section" class="nav-link">History</a>
-        <a href="#helplines-section" class="nav-link">Helplines</a>
+        <a href="#history-section" class="nav-link">Reflections</a>
+        <a href="#helplines-section" class="nav-link">Support</a>
       </nav>
     </div>
   </header>
@@ -45,6 +49,7 @@
 
     <!-- Hero / Welcome -->
     <section class="hero-section" aria-labelledby="hero-heading">
+      <p class="hero-date" id="today-date"></p>
       <h1 id="hero-heading" class="hero-title">
         How are you doing today?
       </h1>
@@ -58,7 +63,7 @@
     <!-- ─── Journal Entry ──────────────────────────────────────────────────── -->
     <section id="journal-section" class="card journal-section" aria-labelledby="journal-heading">
       <h2 id="journal-heading" class="section-title">
-        <span aria-hidden="true">📝</span> Today's Journal
+        <span class="material-symbols-outlined" aria-hidden="true">edit_note</span> Today's Journal
       </h2>
 
       <!-- Journal textarea -->
@@ -88,7 +93,7 @@
           How is your mood right now?
         </label>
         <div class="slider-wrap">
-          <span class="slider-endpoint" aria-hidden="true">😞</span>
+          <span class="slider-endpoint" id="mood-emoji-low" aria-hidden="true">😔</span>
           <input
             type="range"
             id="mood-slider"
@@ -103,7 +108,7 @@
             aria-valuemax="5"
             aria-valuenow="3"
           />
-          <span class="slider-endpoint" aria-hidden="true">😊</span>
+          <span class="slider-endpoint" id="mood-emoji-high" aria-hidden="true">🧘</span>
         </div>
         <div id="mood-label" class="mood-value-label" aria-live="polite" aria-atomic="true">
           3 — Neutral
@@ -194,7 +199,7 @@
         <!-- Mood Trend -->
         <section class="insight-card" aria-labelledby="trend-heading">
           <h2 id="trend-heading" class="section-title">
-            <span aria-hidden="true">📈</span> Mood Trend
+            <span class="material-symbols-outlined" aria-hidden="true">trending_up</span> Mood Trend
           </h2>
           <div id="trend-container"></div>
         </section>
@@ -202,7 +207,7 @@
         <!-- Trigger Breakdown -->
         <section class="insight-card" aria-labelledby="triggers-heading">
           <h2 id="triggers-heading" class="section-title">
-            <span aria-hidden="true">🔍</span> Stress Signals
+            <span class="material-symbols-outlined" aria-hidden="true">neurology</span> Stress Signals
           </h2>
           <div id="trigger-container"></div>
         </section>
@@ -210,7 +215,7 @@
         <!-- Coping Suggestions -->
         <section class="insight-card" aria-labelledby="coping-heading">
           <h2 id="coping-heading" class="section-title">
-            <span aria-hidden="true">💡</span> Coping Strategies
+            <span class="material-symbols-outlined" aria-hidden="true">lightbulb</span> Coping Strategies
           </h2>
           <div id="coping-container"></div>
         </section>
@@ -218,7 +223,7 @@
         <!-- Adaptive Mindfulness -->
         <section class="insight-card" aria-labelledby="mindfulness-heading">
           <h2 id="mindfulness-heading" class="section-title">
-            <span aria-hidden="true">🧘</span> Adaptive Mindfulness
+            <span class="material-symbols-outlined" aria-hidden="true">self_improvement</span> Adaptive Mindfulness
           </h2>
           <div id="mindfulness-container"></div>
         </section>
@@ -226,7 +231,7 @@
         <!-- Weekly Summary -->
         <section class="insight-card" aria-labelledby="summary-heading">
           <h2 id="summary-heading" class="section-title">
-            <span aria-hidden="true">📅</span> Weekly Summary
+            <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span> Weekly Summary
           </h2>
           <div id="summary-container"></div>
         </section>
@@ -237,7 +242,7 @@
     <!-- ─── Entry History ──────────────────────────────────────────────────── -->
     <section id="history-section" class="card history-section" aria-labelledby="history-heading">
       <h2 id="history-heading" class="section-title">
-        <span aria-hidden="true">🗂</span> Recent Entries
+        <span class="material-symbols-outlined" aria-hidden="true">history_edu</span> Recent Reflections
       </h2>
       <div id="history-container" aria-live="polite">
         <p class="no-history">Your journal entries will appear here.</p>
@@ -253,7 +258,7 @@
       <!-- Always-visible helplines -->
       <section id="helplines-section" class="helplines-section" aria-labelledby="helplines-heading">
         <h2 id="helplines-heading" class="helplines-title">
-          <span aria-hidden="true">📞</span> Mental Health Helplines
+          <span class="material-symbols-outlined" aria-hidden="true">call</span> Mental Health Helplines
         </h2>
         <p class="helplines-subtitle">Free, confidential support — always available.</p>
         <div id="helplines-container"></div>
