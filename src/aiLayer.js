@@ -93,40 +93,41 @@ Respond in plain English, conversational tone, 3-4 sentences maximum.`;
 }
 
 /**
- * Generates a personalised empathetic response to a single journal entry.
- * The response acknowledges the user's mood and validates their feelings
- * without minimising or offering unsolicited advice.
+ * Generates a personalised empathetic response for the current check-in.
+ *
+ * Privacy by design: the user's raw journal text is NEVER sent to the model.
+ * The prompt is built only from the mood rating and the anonymised stress
+ * trigger categories already derived locally by the engine.
  * Returns null if no API key is provided or if the call fails for any reason.
  *
- * @param {string} entry - The journal entry text from the user.
  * @param {number} mood - The mood rating (1-5) submitted with the entry.
+ * @param {string[]} triggers - Anonymised trigger category names (e.g. ['sleep_disruption']).
  * @param {string|null|undefined} apiKey - Gemini API key. If falsy, returns null immediately.
  * @returns {Promise<string|null>} A warm, empathetic response string, or null on failure.
  *
  * @example
- * const response = await generateEmpathyResponse(entry, 2, apiKey);
+ * const response = await generateEmpathyResponse(2, ['sleep_disruption'], apiKey);
  * if (response) renderEmpathyCard(response);
  */
-export async function generateEmpathyResponse(entry, mood, apiKey) {
+export async function generateEmpathyResponse(mood, triggers, apiKey) {
   if (!apiKey || typeof apiKey !== 'string' || !apiKey.trim()) return null;
-  if (!entry || typeof entry !== 'string') return null;
 
   const moodLabels = { 1: 'very low', 2: 'low', 3: 'neutral', 4: 'good', 5: 'great' };
   const moodLabel = moodLabels[mood] || 'neutral';
 
-  // Truncate entry to avoid sending excessive personal data
-  const truncatedEntry = entry.slice(0, 800);
+  // Only anonymised category names leave the device — never the raw entry.
+  const themes = Array.isArray(triggers) && triggers.length > 0
+    ? triggers.map((t) => String(t).replace(/_/g, ' ')).join(', ')
+    : 'none identified';
 
-  const prompt = `You are a compassionate wellness companion for Indian students and exam aspirants. A user has shared a journal entry and rated their mood as ${moodLabel} (${mood}/5).
+  const prompt = `You are a compassionate wellness companion for Indian students and exam aspirants. A user has just checked in. Their self-rated mood is ${moodLabel} (${mood}/5), and the stress themes detected today are: ${themes}.
 
 Your task: Write a warm, empathetic response in 2-3 sentences that:
-- Acknowledges and validates what they're feeling
+- Acknowledges and validates what they may be feeling, given the mood and themes
 - Does NOT minimise their experience ("at least...", "others have it worse")
 - Does NOT give advice unless it's a single, gentle, concrete suggestion
 - Uses a calm, peer-like tone (not clinical or overly formal)
 - Is appropriate for a ${moodLabel} mood
-
-Journal entry: "${truncatedEntry}"
 
 Respond in 2-3 sentences only. Plain English, no bullet points.`;
 

@@ -35,11 +35,11 @@ export function sanitizeInput(text, maxLength = 5000) {
  * Returns each matched category only once, regardless of how many keywords match.
  *
  * @param {string} text - Journal entry text to analyse.
- * @returns {string[]} Array of matched trigger category names (e.g. ['syllabus', 'sleep']).
+ * @returns {string[]} Array of matched trigger category names (e.g. ['syllabus_overload', 'sleep_disruption']).
  *
  * @example
  * extractTriggers('I failed my mock test and cannot sleep');
- * // returns ['mock_tests', 'sleep']
+ * // returns ['mock_performance', 'sleep_disruption']
  */
 export function extractTriggers(text) {
   if (!text || typeof text !== 'string') return [];
@@ -60,7 +60,7 @@ export function extractTriggers(text) {
 /**
  * Computes the mood trend across an array of journal entries.
  * Compares the average mood of the most recent half of entries to the earlier half.
- * Requires at least 2 entries to produce a meaningful trend.
+ * Requires at least 4 entries (2 per half) to produce a meaningful, low-noise trend.
  *
  * @param {Array.<{mood: number, timestamp: number}>} entries - Journal entries sorted oldest-first.
  * @returns {'rising'|'declining'|'stable'|'insufficient_data'} The computed trend label.
@@ -71,7 +71,7 @@ export function extractTriggers(text) {
  * computeMoodTrend([{mood:3}]);                            // 'insufficient_data'
  */
 export function computeMoodTrend(entries) {
-  if (!Array.isArray(entries) || entries.length < 2) {
+  if (!Array.isArray(entries) || entries.length < 4) {
     return 'insufficient_data';
   }
 
@@ -93,30 +93,26 @@ export function computeMoodTrend(entries) {
 
 /**
  * Detects whether a journal entry contains crisis-related language.
- * Matches against CRISIS_KEYWORDS using case-insensitive substring search.
- * Returns both a flag and the matched phrase to enable contextual UI responses.
+ * Matches against CRISIS_KEYWORDS using a case-insensitive substring scan,
+ * exiting early on the first match. Empty or blank input returns false.
  *
  * @param {string} text - Journal entry text to scan.
- * @returns {{crisis: boolean, matchedPhrase: string|null}} Detection result.
+ * @returns {boolean} True if any crisis phrase is present, otherwise false.
  *
  * @example
- * detectCrisis('I want to die');    // { crisis: true, matchedPhrase: 'want to die' }
- * detectCrisis('I want to study');  // { crisis: false, matchedPhrase: null }
+ * detectCrisis('I want to die');    // true
+ * detectCrisis('I want to study');  // false
  */
 export function detectCrisis(text) {
-  if (!text || typeof text !== 'string') {
-    return { crisis: false, matchedPhrase: null };
-  }
+  if (!text || typeof text !== 'string') return false;
 
   const lower = text.toLowerCase();
 
   for (const phrase of CRISIS_KEYWORDS) {
-    if (lower.includes(phrase.toLowerCase())) {
-      return { crisis: true, matchedPhrase: phrase };
-    }
+    if (lower.includes(phrase.toLowerCase())) return true;
   }
 
-  return { crisis: false, matchedPhrase: null };
+  return false;
 }
 
 /**
@@ -130,8 +126,8 @@ export function detectCrisis(text) {
  * @returns {Array.<{category: string, strategies: string[]}>} Ordered list of category–strategy pairs.
  *
  * @example
- * suggestCoping(['sleep'], 'declining');
- * // [{ category: 'sleep', strategies: ['...strategy 1...', '...strategy 2...'] }]
+ * suggestCoping(['sleep_disruption'], 'declining');
+ * // [{ category: 'sleep_disruption', strategies: ['...strategy 1...', '...strategy 2...'] }]
  */
 export function suggestCoping(triggers, moodTrend) {
   const isEscalated = moodTrend === 'declining';
@@ -168,11 +164,14 @@ export function suggestCoping(triggers, moodTrend) {
  *   narrative: string
  * }} Aggregated weekly summary object.
  *
+ * @param {number} [now=Date.now()] - Reference timestamp for the 7-day window.
+ *   Injected so the function stays pure and deterministic in tests.
+ *
  * @example
  * generateWeeklySummary([]);
  * // { totalEntries: 0, averageMood: null, moodLabel: null, topTriggers: [], trend: 'insufficient_data', narrative: '...' }
  */
-export function generateWeeklySummary(entries) {
+export function generateWeeklySummary(entries, now = Date.now()) {
   if (!Array.isArray(entries) || entries.length === 0) {
     return {
       totalEntries: 0,
@@ -184,7 +183,7 @@ export function generateWeeklySummary(entries) {
     };
   }
 
-  const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
   const weekEntries = entries.filter((e) => e.timestamp >= oneWeekAgo);
 
   if (weekEntries.length === 0) {
@@ -202,7 +201,7 @@ export function generateWeeklySummary(entries) {
   const totalMood = weekEntries.reduce((sum, e) => sum + (Number(e.mood) || 0), 0);
   const averageMood = Math.round((totalMood / weekEntries.length) * 10) / 10;
   const moodRounded = Math.round(averageMood);
-  const moodLabel = MOOD_SCALE[moodRounded] || 'Neutral';
+  const moodLabel = (MOOD_SCALE.find((m) => m.value === moodRounded) || {}).label || 'Neutral';
 
   // Top triggers frequency count
   const triggerCounts = {};

@@ -165,8 +165,8 @@ All functions are **pure** and exported. Signatures are normative; tests assert 
 | `detectCrisis` | `(text: string) => boolean` | Case-insensitive substring scan over `CRISIS_KEYWORDS`. Early-exit on first match. Empty/blank → `false`. |
 | `extractTriggers` | `(text: string) => string[]` | Returns the subset of the six category keys whose keywords appear in `text`. Deterministic order = `TRIGGER_KEYWORDS` key order. No duplicates. |
 | `computeMoodTrend` | `(entries: Entry[]) => 'rising' \| 'declining' \| 'stable' \| 'insufficient_data'` | Compares mean mood of most-recent half vs earlier half. `< 4` entries → `insufficient_data`. Pure; no `Date.now`. |
-| `suggestCoping` | `(triggers: string[], trend: string) => string[]` | Picks from `COPING_STRATEGIES` per matched trigger. When `trend === 'declining'`, escalate to 2 strategies/trigger. De-duplicated, stable order. |
-| `generateWeeklySummary` | `(entries: Entry[], now: number) => Summary` | Aggregates entries within `now − 7 days`. Returns `{ count, avgMood, topTriggers, narrative }`. `now` is **injected** (keeps purity). |
+| `suggestCoping` | `(triggers: string[], trend: string) => Array<{category: string, strategies: string[]}>` | Returns one grouped entry per matched trigger (category + its strategies) so the UI can render labelled coping cards. When `trend === 'declining'`, escalate to 2 strategies/trigger; otherwise 1. Falls back to the first two categories when no triggers. Stable order. |
+| `generateWeeklySummary` | `(entries: Entry[], now?: number) => Summary` | Aggregates entries within `now − 7 days`. `now` defaults to `Date.now()` but is **injectable** to keep the function pure/testable. Returns `{ totalEntries, averageMood, moodLabel, topTriggers, trend, narrative }`. |
 
 **Type — `Entry` (canonical):**
 ```js
@@ -185,8 +185,8 @@ Optional enhancement layer (R2). The app MUST be fully functional when this laye
 
 | Function | Signature | Contract |
 |---|---|---|
-| `analyzePatterns` | `(summary: Summary, apiKey: string) => Promise<string \| null>` | Sends **anonymised** pattern data (mood values, dates, trigger categories) — **never raw journal text**. Returns insight text or `null` on any error. |
-| `generateEmpathyResponse` | `(context, apiKey: string) => Promise<string \| null>` | Returns a short empathetic, motivational message (R6). Returns `null` on error. |
+| `analyzePatterns` | `(entries: Entry[], apiKey: string) => Promise<string \| null>` | Builds an **anonymised** summary internally from the last 10 entries (mood values, dates, trigger categories) — **never reads or sends `entry.text`**. Returns insight text or `null` on any error. |
+| `generateEmpathyResponse` | `(mood: number, triggers: string[], apiKey: string) => Promise<string \| null>` | Returns a short empathetic, motivational message (R6) built **only** from the mood rating and anonymised trigger categories — **never the raw journal text**. Returns `null` on error. |
 
 **Rules (MUST):**
 - Model: **Gemini 1.5 Flash**. Key is **user-provided at runtime**; never embedded, never persisted, never logged.

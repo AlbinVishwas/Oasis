@@ -765,12 +765,12 @@ body {
 /* Press-to-sink: grounding tactile response */
 .coping-card:active { transform: scale(0.99); box-shadow: none; }
 
-.coping-card[data-category="syllabus"]   { border-left-color: var(--primary); }
-.coping-card[data-category="mock_tests"]  { border-left-color: var(--secondary); }
-.coping-card[data-category="sleep"]       { border-left-color: var(--secondary); }
-.coping-card[data-category="family"]      { border-left-color: var(--tertiary); }
-.coping-card[data-category="backlog"]     { border-left-color: var(--tertiary); }
-.coping-card[data-category="comparison"]  { border-left-color: var(--secondary); }
+.coping-card[data-category="syllabus_overload"] { border-left-color: var(--primary); }
+.coping-card[data-category="mock_performance"]  { border-left-color: var(--secondary); }
+.coping-card[data-category="sleep_disruption"]  { border-left-color: var(--secondary); }
+.coping-card[data-category="family_pressure"]   { border-left-color: var(--tertiary); }
+.coping-card[data-category="backlog_anxiety"]   { border-left-color: var(--tertiary); }
+.coping-card[data-category="peer_comparison"]   { border-left-color: var(--secondary); }
 
 .coping-card-title {
   font-size: 0.75rem;

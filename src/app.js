@@ -46,6 +46,16 @@ function formatCategory(cat) {
   return cat.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/**
+ * Returns the descriptive label for a mood value (1-5) from MOOD_SCALE.
+ * @param {number|string} value
+ * @returns {string}
+ */
+function moodLabelFor(value) {
+  const entry = MOOD_SCALE.find((m) => m.value === Number(value));
+  return entry ? entry.label : String(value);
+}
+
 // ─── Persistence ──────────────────────────────────────────────────────────────
 
 /**
@@ -161,7 +171,7 @@ function renderMoodTrend(container, trend, entries) {
   const recentEntries = entries.slice(-7);
   const dots = recentEntries.map((e) => {
     const pct = ((e.mood - 1) / 4) * 100;
-    const label = MOOD_SCALE[e.mood] || e.mood;
+    const label = moodLabelFor(e.mood);
     return `<div class="sparkdot" style="--pct:${pct}%" title="${escapeHtml(label)}" aria-label="Mood: ${escapeHtml(label)}"></div>`;
   }).join('');
 
@@ -284,7 +294,7 @@ function renderHistory(container, entries) {
       weekday: 'short', month: 'short', day: 'numeric',
       hour: '2-digit', minute: '2-digit',
     });
-    const moodLabel = MOOD_SCALE[e.mood] || e.mood;
+    const moodLabel = moodLabelFor(e.mood);
     const preview = escapeHtml(e.text.slice(0, 120)) + (e.text.length > 120 ? '…' : '');
     const triggerList = Array.isArray(e.triggers) && e.triggers.length > 0
       ? e.triggers.map((t) => `<span class="trigger-tag tiny">${escapeHtml(formatCategory(t))}</span>`).join(' ')
@@ -339,7 +349,7 @@ function renderHelplines(container) {
  */
 function updateMoodLabel(slider, label) {
   const val = parseInt(slider.value, 10);
-  label.textContent = `${val} — ${MOOD_SCALE[val] || ''}`;
+  label.textContent = `${val} — ${moodLabelFor(val)}`;
 }
 
 // ─── Submit Handler ───────────────────────────────────────────────────────────
@@ -374,7 +384,7 @@ async function handleSubmit(els, entries) {
   hide(els.resultsSection);
 
   // 2. Crisis detection FIRST — gates all further processing
-  const { crisis } = detectCrisis(text);
+  const crisis = detectCrisis(text);
 
   if (crisis) {
     renderCrisisUI(els.crisisContainer);
@@ -420,8 +430,9 @@ async function handleSubmit(els, entries) {
   if (apiKey) {
     setLive(els.aiLiveRegion, `<p class="ai-loading" aria-live="polite">✨ Getting personalised insight…</p>`);
 
+    // Privacy: only mood + anonymised trigger categories are sent — never raw text.
     const [empathy, patterns] = await Promise.all([
-      generateEmpathyResponse(text, mood, apiKey),
+      generateEmpathyResponse(mood, triggers, apiKey),
       analyzePatterns(entries, apiKey),
     ]);
 
